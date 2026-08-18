@@ -1,0 +1,36 @@
+{
+  "schemaVersion": 1,
+  "id": "nm.wwan",
+  "name": "WWAN",
+  "version": "0.1.0",
+  "author": "nm",
+  "license": "MIT",
+  "description": "Cellular modem status and connect/disconnect in the Omarchy bar. Hides when no modem is present.",
+  "kinds": [
+    "bar-widget"
+  ],
+  "entryPoints": {
+    "barWidget": "Panel.qml"
+  },
+  "barWidget": {
+    "displayName": "WWAN",
+    "description": "Show cellular signal and toggle the NetworkManager gsm profile.",
+    "category": "Network",
+    "allowMultiple": false,
+    "defaultSection": "right",
+    "defaults": {
+      "refreshIntervalSec": 10
+    },
+    "schema": [
+      {
+        "key": "refreshIntervalSec",
+        "type": "integer",
+        "label": "Refresh interval (seconds)",
+        "min": 5,
+        "max": 3600,
+        "step": 5,
+        "defaultValue": 10
+      }
+    ]
+  }
+}
