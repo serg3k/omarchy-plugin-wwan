@@ -1,12 +1,12 @@
-# WWAN for Omarchy
+# WWAN connection indicator
 
 Bar widget for cellular / mobile data on Omarchy 4 (Quattro). It shows signal and operator, and connects or disconnects the NetworkManager gsm profile with one switch.
 
 The widget hides when the machine has no modem. Wi-Fi and Ethernet stay in the stock network widget.
 
-![WWAN panel open from the bar, connected to Telekom.de on LTE](screenshot.png)
+![WWAN panel open from the bar, connected to Telekom.de on LTE](preview.png)
 
-Plugin id: `omarchy-plugin-wwan`.
+Plugin id: `io.github.serg3k.omarchy-plugin-wwan`.
 
 ## Features
 
@@ -26,22 +26,30 @@ This plugin does not ship FCC unlock scripts or an APN editor. Set those up with
 
 ## Install
 
-This repo is a plugin: `manifest.json` at the root. Add it from git when you have a URL:
+This repo is a plugin: `manifest.json` at the root.
 
 ```bash
-omarchy plugin add <git-url> --enable
+omarchy plugin add https://github.com/serg3k/omarchy-plugin-wwan.git --enable
 ```
 
 From a local checkout:
 
 ```bash
 mkdir -p ~/.config/omarchy/plugins
-ln -sfn "$(pwd)" ~/.config/omarchy/plugins/omarchy-plugin-wwan
-omarchy plugin validate ~/.config/omarchy/plugins/omarchy-plugin-wwan
-omarchy plugin enable omarchy-plugin-wwan
+ln -sfn "$(pwd)" ~/.config/omarchy/plugins/io.github.serg3k.omarchy-plugin-wwan
+omarchy plugin validate ~/.config/omarchy/plugins/io.github.serg3k.omarchy-plugin-wwan
+omarchy plugin enable io.github.serg3k.omarchy-plugin-wwan
 ```
 
-If the icon does not appear, run `omarchy-shell shell rescanPlugins` or `omarchy restart shell`. Move it with `omarchy bar move omarchy-plugin-wwan --section right` if you want a different slot.
+If the icon does not appear, run `omarchy-shell shell rescanPlugins` or `omarchy restart shell`. Move it with `omarchy bar move io.github.serg3k.omarchy-plugin-wwan --section right` if you want a different slot.
+
+## Removal
+
+```bash
+omarchy plugin remove io.github.serg3k.omarchy-plugin-wwan
+```
+
+That disables the widget and removes the checkout or symlink under `~/.config/omarchy/plugins/`. A hand-made folder with no git remote is moved to a timestamped backup instead of being deleted.
 
 ## Use
 
@@ -78,3 +86,7 @@ Inside the panel:
 | 2026-08-18 | Lenovo ThinkPad T14 Gen 6 (`21QJ00DTGE`), Omarchy 4.0.0, kernel `6.18.2-arch2-1` | Quectel **EM061K-GL** (LTE) | NM profile `v6-telekom`, operator Telekom.de, FCC unlock `2c7c:6008` already on the host |
 
 Other laptops with a ModemManager gsm device should work the same. They are not tested in this tree. US-sold modules often need an FCC unlock symlink under `/etc/ModemManager/fcc-unlock.d/` before any UI matters.
+
+## License
+
+MIT. See [LICENSE](LICENSE).

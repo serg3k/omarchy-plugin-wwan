@@ -1,9 +1,9 @@
 {
   "schemaVersion": 1,
-  "id": "omarchy-plugin-wwan",
+  "id": "io.github.serg3k.omarchy-plugin-wwan",
   "name": "WWAN",
   "version": "0.1.0",
-  "author": "nm",
+  "author": "Serge",
   "license": "MIT",
   "description": "Cellular modem status and connect/disconnect in the Omarchy bar. Hides when no modem is present.",
   "kinds": [
