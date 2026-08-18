@@ -181,7 +181,7 @@ assert.strictEqual(Model.iconKind("failed", false), "failed")
 assert.strictEqual(Model.iconKind("connected", true), "locked")
 assert.strictEqual(Model.cellularIcon(38, "ok"), String.fromCodePoint(0xF08F4))
 assert.strictEqual(Model.cellularIcon(80, "ok"), String.fromCodePoint(0xF08F7))
-assert.strictEqual(Model.cellularIcon(0, "off"), String.fromCodePoint(0xF08F3))
+assert.strictEqual(Model.cellularIcon(0, "off"), String.fromCodePoint(0xF08FC))
 pass("labels and icons")
 
 console.log("all tests passed")

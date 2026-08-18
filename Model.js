@@ -194,12 +194,10 @@ function signalPercent(map) {
   return n
 }
 
-// Cellular signal wedge (md-network-strength-*). The pre-Quattro Waybar
-// config had no WWAN module: a connected modem reused format-ethernet
-// (md-access-point, the sausage). The community 5G applet used
-// signal-tier glyphs instead; these are the current Nerd Font equivalents.
+// Cellular signal wedge (md-network-strength-*). Off/rfkill is the slashed
+// wedge U+F08FC (not U+F08F3, which is a SIM slot in this font).
 function cellularIcon(percent, kind) {
-  if (kind === "off" || kind === "failed" || kind === "locked") return String.fromCodePoint(0xF08F3)
+  if (kind === "off" || kind === "failed" || kind === "locked") return String.fromCodePoint(0xF08FC)
   var n = parseInt(percent, 10)
   if (!isFinite(n) || n < 20) return String.fromCodePoint(0xF08F8)
   if (n < 40) return String.fromCodePoint(0xF08F4)
