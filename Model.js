@@ -249,10 +249,16 @@ function parsePresence(raw) {
   }
 }
 
+function pickGsmDevice(devices) {
+  var gsm = gsmDevices(devices)
+  return gsm.length > 0 ? String(gsm[0].device || "") : ""
+}
+
 function parseStatus(raw) {
   var map = parseKeyValue(section(raw, "MODEM") || raw)
   var routeDev = parseRouteDev(section(raw, "ROUTE"))
   var connections = gsmConnections(parseNmConnections(section(raw, "NMCONN")))
+  var gsmDevice = pickGsmDevice(parseNmDevices(section(raw, "NM")))
   var state = String(map["modem.generic.state"] || "").toLowerCase()
   var unlock = unlockRequired(map)
   var blocking = isBlockingUnlock(unlock, state)
@@ -289,15 +295,36 @@ function parseStatus(raw) {
     defaultRoute: defaultRoute,
     connected: connected,
     profileName: profile ? String(profile.name || "") : "",
-    hasNmProfile: !!profile
+    hasNmProfile: !!profile,
+    gsmDevice: gsmDevice
   }
 }
 
-function connectCommand(status) {
-  if (status && status.hasNmProfile && status.profileName) {
-    return ["nmcli", "connection", "up", "id", status.profileName]
+function shellQuote(value) {
+  return "'" + String(value == null ? "" : value).replace(/'/g, "'\\''") + "'"
+}
+
+function enableRadioCommands(status) {
+  var steps = [
+    "rfkill unblock wwan || true",
+    "nmcli radio wwan on || true",
+    "mmcli -m any --enable || true"
+  ]
+  var dev = status && status.gsmDevice ? String(status.gsmDevice) : ""
+  if (dev !== "") {
+    steps.push("nmcli device set " + shellQuote(dev) + " managed yes || true")
   }
-  return ["mmcli", "-m", "any", "--simple-connect"]
+  return steps
+}
+
+function connectCommand(status) {
+  var steps = enableRadioCommands(status)
+  if (status && status.hasNmProfile && status.profileName) {
+    steps.push("nmcli connection up id " + shellQuote(status.profileName))
+  } else {
+    steps.push("mmcli -m any --simple-connect")
+  }
+  return ["bash", "-c", steps.join("; ")]
 }
 
 function disconnectCommand(status) {
@@ -327,8 +354,11 @@ if (typeof module !== "undefined") {
     iconKind: iconKind,
     isActivatedConnection: isActivatedConnection,
     pickGsmProfile: pickGsmProfile,
+    pickGsmDevice: pickGsmDevice,
     parsePresence: parsePresence,
     parseStatus: parseStatus,
+    shellQuote: shellQuote,
+    enableRadioCommands: enableRadioCommands,
     connectCommand: connectCommand,
     disconnectCommand: disconnectCommand
   }

@@ -5,6 +5,16 @@ function pass(name) {
   console.log("ok - " + name)
 }
 
+function assertConnectScript(status, snippets) {
+  const cmd = Model.connectCommand(status)
+  assert.strictEqual(cmd[0], "bash")
+  assert.strictEqual(cmd[1], "-c")
+  snippets.forEach(function(snippet) {
+    assert.ok(cmd[2].indexOf(snippet) !== -1, "missing: " + snippet + " in " + cmd[2])
+  })
+  return cmd[2]
+}
+
 assert.strictEqual(Model.isSecretKey("modem.3gpp.imei"), true)
 assert.strictEqual(Model.isSecretKey("modem.generic.own-numbers.value[1]"), true)
 assert.strictEqual(Model.isSecretKey("modem.generic.state"), false)
@@ -77,7 +87,12 @@ assert.strictEqual(status.blockingUnlock, false)
 assert.strictEqual(status.pin2Footnote, true)
 assert.strictEqual(status.defaultRoute, true)
 assert.strictEqual(status.profileName, "v6-telekom")
-assert.deepStrictEqual(Model.connectCommand(status), ["nmcli", "connection", "up", "id", "v6-telekom"])
+assertConnectScript(status, [
+  "rfkill unblock wwan",
+  "nmcli radio wwan on",
+  "mmcli -m any --enable",
+  "nmcli connection up id 'v6-telekom'"
+])
 assert.deepStrictEqual(Model.disconnectCommand(status), ["nmcli", "connection", "down", "id", "v6-telekom"])
 pass("status: connected, FDN footnote, NM profile, default route")
 
@@ -89,7 +104,10 @@ const locked = Model.parseStatus([
 ].join("\n"))
 assert.strictEqual(locked.blockingUnlock, true)
 assert.strictEqual(locked.pin2Footnote, false)
-assert.deepStrictEqual(Model.connectCommand(locked), ["mmcli", "-m", "any", "--simple-connect"])
+assertConnectScript(locked, [
+  "rfkill unblock wwan",
+  "mmcli -m any --simple-connect"
+])
 pass("status: blocking PIN falls back to mmcli")
 
 const wifiDefault = Model.parseStatus([
@@ -115,9 +133,31 @@ const profileDown = Model.parseStatus([
 assert.strictEqual(profileDown.hasNmProfile, true)
 assert.strictEqual(profileDown.profileName, "v6-telekom")
 assert.strictEqual(profileDown.connected, false)
-assert.deepStrictEqual(Model.connectCommand(profileDown), ["nmcli", "connection", "up", "id", "v6-telekom"])
+assertConnectScript(profileDown, ["nmcli connection up id 'v6-telekom'"])
 assert.deepStrictEqual(Model.disconnectCommand(profileDown), ["nmcli", "connection", "down", "id", "v6-telekom"])
 pass("NM profile down is disconnected even when MM still says connected")
+
+const radioOff = Model.parseStatus([
+  "===MODEM===",
+  "modem.generic.state                             : disabled",
+  "modem.generic.power-state                       : low",
+  "===NM===",
+  "cdc-wdm0:gsm:unavailable:",
+  "enp195s0f0:ethernet:unavailable:",
+  "===NMCONN===",
+  "v6-telekom:gsm::"
+].join("\n"))
+assert.strictEqual(radioOff.connected, false)
+assert.strictEqual(radioOff.gsmDevice, "cdc-wdm0")
+assertConnectScript(radioOff, [
+  "rfkill unblock wwan",
+  "nmcli radio wwan on",
+  "mmcli -m any --enable",
+  "nmcli device set 'cdc-wdm0' managed yes",
+  "nmcli connection up id 'v6-telekom'"
+])
+assert.ok(Model.connectCommand(radioOff)[2].indexOf("enp195s0f0") === -1)
+pass("connect enables radio and the gsm device before the profile")
 
 assert.strictEqual(Model.accessTechLabel("lte"), "LTE")
 assert.strictEqual(Model.accessTechLabel("5gnr"), "5G")
