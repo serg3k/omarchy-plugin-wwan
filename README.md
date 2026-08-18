@@ -1,4 +1,4 @@
-# WWAN connection indicator
+# WWAN connection widget
 
 Bar widget for cellular / mobile data on Omarchy 4 (Quattro). It shows signal and operator, and connects or disconnects the NetworkManager gsm profile with one switch.
 
@@ -22,7 +22,26 @@ Plugin id: `io.github.serg3k.omarchy-plugin-wwan`.
 - `ModemManager` and `NetworkManager`
 - A gsm / WWAN modem that already works with `mmcli` and an NM gsm profile (APN saved in NetworkManager)
 
-This plugin does not ship FCC unlock scripts or an APN editor. Set those up with `nmtui` or your vendor unlock first.
+This plugin does not ship an APN editor. Save the gsm profile with `nmtui` first. If the modem stays in enabling or low power, see [FCC unlock](#fcc-unlock).
+
+## FCC unlock
+
+Many US-sold Lenovo, Dell, and HP modules stay in enabling or low power until you enable an FCC unlock script. That is host setup. This plugin does not ship unlock scripts.
+
+1. Find the modem `vid:pid` in `lsusb` or `lspci -nn`. Match it to a name under `/usr/share/ModemManager/fcc-unlock.available.d/`.
+2. As root, link **only** that script and restart ModemManager:
+
+```bash
+mkdir -p /etc/ModemManager/fcc-unlock.d
+ln -sft /etc/ModemManager/fcc-unlock.d /usr/share/ModemManager/fcc-unlock.available.d/vid:pid
+systemctl restart ModemManager
+```
+
+On this ThinkPad the Quectel EM061K-GL id is `2c7c:6008`.
+
+Do not symlink every file in `fcc-unlock.available.d`. Some vendors ship their own unlock package instead of the ModemManager script.
+
+See [Arch Wiki: FCC locking](https://wiki.archlinux.org/title/Mobile_broadband_modem#FCC_locking) and [ModemManager: FCC unlock](https://modemmanager.org/docs/modemmanager/fcc-unlock/).
 
 ## Install
 
@@ -85,7 +104,7 @@ Inside the panel:
 |---|---|---|---|
 | 2026-08-18 | Lenovo ThinkPad T14 Gen 6 (`21QJ00DTGE`), Omarchy 4.0.0, kernel `6.18.2-arch2-1` | Quectel **EM061K-GL** (LTE) | NM profile `v6-telekom`, operator Telekom.de, FCC unlock `2c7c:6008` already on the host |
 
-Other laptops with a ModemManager gsm device should work the same. They are not tested in this tree. US-sold modules often need an FCC unlock symlink under `/etc/ModemManager/fcc-unlock.d/` before any UI matters.
+Other laptops with a ModemManager gsm device should work the same. They are not tested in this tree.
 
 ## License
 
