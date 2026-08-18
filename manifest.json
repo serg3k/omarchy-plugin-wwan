@@ -1,6 +1,6 @@
 {
   "schemaVersion": 1,
-  "id": "nm.wwan",
+  "id": "omarchy-plugin-wwan",
   "name": "WWAN",
   "version": "0.1.0",
   "author": "nm",

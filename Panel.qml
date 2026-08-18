@@ -8,8 +8,8 @@ import "Model.js" as Model
 
 Panel {
   id: root
-  moduleName: "nm.wwan"
-  ipcTarget: "nm.wwan"
+  moduleName: "omarchy-plugin-wwan"
+  ipcTarget: "omarchy-plugin-wwan"
   manageIpc: false
 
   property string focusSection: "header"

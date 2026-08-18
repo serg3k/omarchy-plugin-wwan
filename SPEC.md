@@ -1,10 +1,10 @@
-# omarchy.wwan — developer spec
+# omarchy-plugin-wwan — developer spec
 
 User-facing install and usage: [README.md](README.md).
 
 User-space Omarchy shell plugin: WWAN / cellular modem in the Quattro bar.
 
-The folder is named `omarchy.wwan` for a later first-party copy. The live manifest id is **`nm.wwan`**: the shell rejects third-party ids in the reserved `omarchy.*` namespace.
+Folder, git repo, and live manifest id are **`omarchy-plugin-wwan`**. That is not the reserved `omarchy.*` namespace (`omarchy.wwan` would be rejected). A later first-party copy would live at `shell/plugins/panels/wwan/` with id `omarchy.wwan`.
 
 | File | What |
 |---|---|
@@ -18,19 +18,19 @@ The folder is named `omarchy.wwan` for a later first-party copy. The live manife
 
 ```bash
 mkdir -p ~/.config/omarchy/plugins
-ln -sfn /home/nm/dev/omarchy/plugins/omarchy.wwan ~/.config/omarchy/plugins/omarchy.wwan
+ln -sfn /home/nm/dev/omarchy/plugins/omarchy-plugin-wwan ~/.config/omarchy/plugins/omarchy-plugin-wwan
 omarchy-shell shell rescanPlugins
-omarchy plugin enable nm.wwan
+omarchy plugin enable omarchy-plugin-wwan
 ```
 
-Or add `{ "id": "nm.wwan" }` to `bar.layout.right` in `~/.config/omarchy/shell.json`.
+Or add `{ "id": "omarchy-plugin-wwan" }` to `bar.layout.right` in `~/.config/omarchy/shell.json`.
 
 Saves under `~/.config/omarchy/plugins/` hot-reload. Force: `omarchy-shell shell rescanPlugins`.
 
 Validate:
 
 ```bash
-omarchy plugin validate /home/nm/dev/omarchy/plugins/omarchy.wwan
+omarchy plugin validate /home/nm/dev/omarchy/plugins/omarchy-plugin-wwan
 ```
 
 Do not edit `/usr/share/omarchy` or land WWAN inside `omarchy.network`.
