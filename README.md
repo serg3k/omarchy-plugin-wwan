@@ -6,7 +6,7 @@ The widget hides when the machine has no modem. Wi-Fi and Ethernet stay in the s
 
 ![WWAN panel open from the bar, connected to Telekom.de on LTE](preview.png)
 
-Plugin id: `io.github.serg3k.omarchy-plugin-wwan`.
+Plugin id: `io.github.serg3k.omarchy-plugin-wwan`. Listed on [Omarchy Plugins](https://omarchyplugins.com/plugin.html?id=io.github.serg3k.omarchy-plugin-wwan).
 
 ## Features
 
