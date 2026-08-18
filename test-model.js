@@ -105,6 +105,20 @@ assert.strictEqual(wifiDefault.connected, true)
 assert.strictEqual(wifiDefault.defaultRoute, false)
 pass("connected modem is still shown when Wi-Fi owns the default route")
 
+const profileDown = Model.parseStatus([
+  "===MODEM===",
+  "modem.generic.state                             : connected",
+  "modem.generic.ports.value[1]                    : wwp198s0f0u3 (net)",
+  "===NMCONN===",
+  "v6-telekom:gsm::"
+].join("\n"))
+assert.strictEqual(profileDown.hasNmProfile, true)
+assert.strictEqual(profileDown.profileName, "v6-telekom")
+assert.strictEqual(profileDown.connected, false)
+assert.deepStrictEqual(Model.connectCommand(profileDown), ["nmcli", "connection", "up", "id", "v6-telekom"])
+assert.deepStrictEqual(Model.disconnectCommand(profileDown), ["nmcli", "connection", "down", "id", "v6-telekom"])
+pass("NM profile down is disconnected even when MM still says connected")
+
 assert.strictEqual(Model.accessTechLabel("lte"), "LTE")
 assert.strictEqual(Model.accessTechLabel("5gnr"), "5G")
 assert.strictEqual(Model.iconKind("failed", false), "failed")

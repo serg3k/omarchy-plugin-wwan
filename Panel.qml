@@ -44,6 +44,7 @@ Panel {
     if (wwan.blockingUnlock) return "SIM lock blocks connect"
     if (wwan.state === "failed") return wwan.failedReason !== "" ? wwan.failedReason : "Modem failed"
     if (wwan.active) return activePhrases[phraseIndex % activePhrases.length]
+    if (wwan.state === "connected") return "Disconnected"
     if (wwan.state === "registered" || wwan.state === "enabled" || wwan.state === "searching") return "Registered, disconnected"
     if (wwan.state !== "") return wwan.state
     return "Checking…"

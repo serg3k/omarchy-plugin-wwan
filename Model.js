@@ -220,6 +220,20 @@ function isConnectedState(state) {
   return String(state || "").toLowerCase() === "connected"
 }
 
+function isActivatedConnection(conn) {
+  return String(conn && conn.state || "").toLowerCase() === "activated"
+}
+
+function pickGsmProfile(connections) {
+  var values = Array.isArray(connections) ? connections : []
+  var fallback = null
+  for (var i = 0; i < values.length; i++) {
+    if (!fallback) fallback = values[i]
+    if (isActivatedConnection(values[i])) return values[i]
+  }
+  return fallback
+}
+
 function parsePresence(raw) {
   var listRaw = section(raw, "LIST")
   var nmRaw = section(raw, "NM")
@@ -243,14 +257,15 @@ function parseStatus(raw) {
   var unlock = unlockRequired(map)
   var blocking = isBlockingUnlock(unlock, state)
   var ports = netPorts(map)
-  var profile = connections.length > 0 ? connections[0] : null
+  var profile = pickGsmProfile(connections)
   var nmConnected = false
   for (var i = 0; i < connections.length; i++) {
-    var connState = String(connections[i].state || "").toLowerCase()
-    var connDevice = String(connections[i].device || "")
-    if (connDevice !== "" || connState === "activated") nmConnected = true
+    if (isActivatedConnection(connections[i])) nmConnected = true
   }
-  var connected = isConnectedState(state) || nmConnected
+  // When an NM gsm profile exists, it owns "connected". MM can stay
+  // "connected" after `nmcli connection down` and must not keep the
+  // toggle on.
+  var connected = profile ? nmConnected : isConnectedState(state)
   var defaultRoute = false
   if (routeDev !== "") {
     if (ports.indexOf(routeDev) !== -1) defaultRoute = true
@@ -310,6 +325,8 @@ if (typeof module !== "undefined") {
     signalPercent: signalPercent,
     cellularIcon: cellularIcon,
     iconKind: iconKind,
+    isActivatedConnection: isActivatedConnection,
+    pickGsmProfile: pickGsmProfile,
     parsePresence: parsePresence,
     parseStatus: parseStatus,
     connectCommand: connectCommand,
