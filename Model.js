@@ -194,14 +194,18 @@ function signalPercent(map) {
   return n
 }
 
-// Nerd Font Material Design cellular bars (U+F08B1..).
+// Cellular signal wedge (md-network-strength-*). The pre-Quattro Waybar
+// config had no WWAN module: a connected modem reused format-ethernet
+// (md-access-point, the sausage). The community 5G applet used
+// signal-tier glyphs instead; these are the current Nerd Font equivalents.
 function cellularIcon(percent, kind) {
-  if (kind === "off" || kind === "failed" || kind === "locked") return String.fromCodePoint(0xF08B9)
-  if (typeof percent !== "number" || percent < 0) return String.fromCodePoint(0xF08BA)
-  if (percent <= 20) return String.fromCodePoint(0xF08BA)
-  if (percent <= 40) return String.fromCodePoint(0xF08B1)
-  if (percent <= 70) return String.fromCodePoint(0xF08B2)
-  return String.fromCodePoint(0xF08B3)
+  if (kind === "off" || kind === "failed" || kind === "locked") return String.fromCodePoint(0xF08F3)
+  var n = parseInt(percent, 10)
+  if (!isFinite(n) || n < 20) return String.fromCodePoint(0xF08F8)
+  if (n < 40) return String.fromCodePoint(0xF08F4)
+  if (n < 60) return String.fromCodePoint(0xF08F5)
+  if (n < 80) return String.fromCodePoint(0xF08F6)
+  return String.fromCodePoint(0xF08F7)
 }
 
 function iconKind(state, blocking) {
