@@ -320,7 +320,9 @@ function enableRadioCommands(status) {
 function connectCommand(status) {
   var steps = enableRadioCommands(status)
   if (status && status.hasNmProfile && status.profileName) {
-    steps.push("nmcli connection up id " + shellQuote(status.profileName))
+    var up = "nmcli connection up id " + shellQuote(status.profileName)
+    if (status.gsmDevice) up += " ifname " + shellQuote(status.gsmDevice)
+    steps.push(up)
   } else {
     steps.push("mmcli -m any --simple-connect")
   }
@@ -328,10 +330,12 @@ function connectCommand(status) {
 }
 
 function disconnectCommand(status) {
+  var steps = []
   if (status && status.hasNmProfile && status.profileName) {
-    return ["nmcli", "connection", "down", "id", status.profileName]
+    steps.push("nmcli connection down id " + shellQuote(status.profileName) + " || true")
   }
-  return ["mmcli", "-m", "any", "--simple-disconnect"]
+  steps.push("mmcli -m any --simple-disconnect")
+  return ["bash", "-c", steps.join("; ")]
 }
 
 if (typeof module !== "undefined") {

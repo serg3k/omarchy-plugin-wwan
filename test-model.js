@@ -15,6 +15,16 @@ function assertConnectScript(status, snippets) {
   return cmd[2]
 }
 
+function assertDisconnectScript(status, snippets) {
+  const cmd = Model.disconnectCommand(status)
+  assert.strictEqual(cmd[0], "bash")
+  assert.strictEqual(cmd[1], "-c")
+  snippets.forEach(function(snippet) {
+    assert.ok(cmd[2].indexOf(snippet) !== -1, "missing: " + snippet + " in " + cmd[2])
+  })
+  return cmd[2]
+}
+
 assert.strictEqual(Model.isSecretKey("modem.3gpp.imei"), true)
 assert.strictEqual(Model.isSecretKey("modem.generic.own-numbers.value[1]"), true)
 assert.strictEqual(Model.isSecretKey("modem.generic.state"), false)
@@ -93,7 +103,10 @@ assertConnectScript(status, [
   "mmcli -m any --enable",
   "nmcli connection up id 'v6-telekom'"
 ])
-assert.deepStrictEqual(Model.disconnectCommand(status), ["nmcli", "connection", "down", "id", "v6-telekom"])
+assertDisconnectScript(status, [
+  "nmcli connection down id 'v6-telekom'",
+  "mmcli -m any --simple-disconnect"
+])
 pass("status: connected, FDN footnote, NM profile, default route")
 
 const locked = Model.parseStatus([
@@ -134,7 +147,10 @@ assert.strictEqual(profileDown.hasNmProfile, true)
 assert.strictEqual(profileDown.profileName, "v6-telekom")
 assert.strictEqual(profileDown.connected, false)
 assertConnectScript(profileDown, ["nmcli connection up id 'v6-telekom'"])
-assert.deepStrictEqual(Model.disconnectCommand(profileDown), ["nmcli", "connection", "down", "id", "v6-telekom"])
+assertDisconnectScript(profileDown, [
+  "nmcli connection down id 'v6-telekom'",
+  "mmcli -m any --simple-disconnect"
+])
 pass("NM profile down is disconnected even when MM still says connected")
 
 const radioOff = Model.parseStatus([
@@ -154,7 +170,7 @@ assertConnectScript(radioOff, [
   "nmcli radio wwan on",
   "mmcli -m any --enable",
   "nmcli device set 'cdc-wdm0' managed yes",
-  "nmcli connection up id 'v6-telekom'"
+  "nmcli connection up id 'v6-telekom' ifname 'cdc-wdm0'"
 ])
 assert.ok(Model.connectCommand(radioOff)[2].indexOf("enp195s0f0") === -1)
 pass("connect enables radio and the gsm device before the profile")

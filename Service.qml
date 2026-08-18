@@ -121,7 +121,6 @@ Item {
     failedReason = String(parsed.failedReason || "")
     connected = parsed.connected === true
     if (_desired !== -1 && connected === (_desired === 1)) _desired = -1
-    lastError = ""
   }
 
   function toggleConnection() {
