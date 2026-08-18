@@ -146,6 +146,8 @@ const profileDown = Model.parseStatus([
 assert.strictEqual(profileDown.hasNmProfile, true)
 assert.strictEqual(profileDown.profileName, "v6-telekom")
 assert.strictEqual(profileDown.connected, false)
+assert.strictEqual(Model.iconKind(profileDown.state, false, profileDown.connected), "disconnected")
+assert.strictEqual(Model.cellularIcon(38, "disconnected"), String.fromCodePoint(0xF08F8))
 assertConnectScript(profileDown, ["nmcli connection up id 'v6-telekom'"])
 assertDisconnectScript(profileDown, [
   "nmcli connection down id 'v6-telekom'",
@@ -179,9 +181,12 @@ assert.strictEqual(Model.accessTechLabel("lte"), "LTE")
 assert.strictEqual(Model.accessTechLabel("5gnr"), "5G")
 assert.strictEqual(Model.iconKind("failed", false), "failed")
 assert.strictEqual(Model.iconKind("connected", true), "locked")
+assert.strictEqual(Model.iconKind("connected", false, false), "disconnected")
+assert.strictEqual(Model.iconKind("disabled", false, false), "off")
 assert.strictEqual(Model.cellularIcon(38, "ok"), String.fromCodePoint(0xF08F4))
 assert.strictEqual(Model.cellularIcon(80, "ok"), String.fromCodePoint(0xF08F7))
 assert.strictEqual(Model.cellularIcon(0, "off"), String.fromCodePoint(0xF08FC))
+assert.strictEqual(Model.cellularIcon(38, "disconnected"), String.fromCodePoint(0xF08F8))
 pass("labels and icons")
 
 console.log("all tests passed")

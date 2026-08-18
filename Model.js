@@ -198,6 +198,7 @@ function signalPercent(map) {
 // wedge U+F08FC (not U+F08F3, which is a SIM slot in this font).
 function cellularIcon(percent, kind) {
   if (kind === "off" || kind === "failed" || kind === "locked") return String.fromCodePoint(0xF08FC)
+  if (kind === "disconnected") return String.fromCodePoint(0xF08F8)
   var n = parseInt(percent, 10)
   if (!isFinite(n) || n < 20) return String.fromCodePoint(0xF08F8)
   if (n < 40) return String.fromCodePoint(0xF08F4)
@@ -206,11 +207,12 @@ function cellularIcon(percent, kind) {
   return String.fromCodePoint(0xF08F7)
 }
 
-function iconKind(state, blocking) {
+function iconKind(state, blocking, connected) {
   var mmState = String(state || "").toLowerCase()
   if (blocking) return "locked"
   if (mmState === "failed" || mmState === "unknown") return "failed"
   if (mmState === "disabled" || mmState === "disabling") return "off"
+  if (connected === false) return "disconnected"
   return "ok"
 }
 

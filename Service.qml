@@ -37,6 +37,8 @@ Item {
   readonly property bool busy: presenceProcess.running || statusProcess.running || actionProcess.running
 
   property var _status: ({})
+  property string _presenceOutput: ""
+  property string _statusOutput: ""
 
   function setting(name, fallback) {
     var value = settings ? settings[name] : undefined
@@ -146,7 +148,7 @@ Item {
     actionProcess.running = true
   }
 
-  readonly property string icon: Model.cellularIcon(signal, Model.iconKind(state, blockingUnlock))
+  readonly property string icon: Model.cellularIcon(signal, Model.iconKind(state, blockingUnlock, connected))
 
   Timer {
     id: refreshTimer
@@ -188,11 +190,18 @@ Item {
       "bash", "-c",
       "printf '%s\\n' '===LIST==='; mmcli -L 2>/dev/null || true; printf '%s\\n' '===NM==='; nmcli -t -f DEVICE,TYPE,STATE,CONNECTION device 2>/dev/null || true"
     ]
-    stdout: StdioCollector { id: presenceStdout; waitForEnd: true }
+    stdout: StdioCollector {
+      id: presenceStdout
+      waitForEnd: true
+      onStreamFinished: {
+        root._presenceOutput = text
+        root.applyPresence(text)
+      }
+    }
     stderr: StdioCollector { id: presenceStderr; waitForEnd: true }
     onExited: function() {
       root.refreshing = false
-      root.applyPresence(presenceStdout.text || "")
+      if (root._presenceOutput === "") root.applyPresence(presenceStdout.text || "")
     }
   }
 
@@ -203,10 +212,17 @@ Item {
       "bash", "-c",
       "printf '%s\\n' '===MODEM==='; mmcli -m any --output-keyvalue 2>/dev/null || true; printf '%s\\n' '===ROUTE==='; ip route get 1.1.1.1 2>/dev/null || true; printf '%s\\n' '===NM==='; nmcli -t -f DEVICE,TYPE,STATE,CONNECTION device 2>/dev/null || true; printf '%s\\n' '===NMCONN==='; nmcli -t -f NAME,TYPE,DEVICE,STATE connection show 2>/dev/null || true"
     ]
-    stdout: StdioCollector { id: statusStdout; waitForEnd: true }
+    stdout: StdioCollector {
+      id: statusStdout
+      waitForEnd: true
+      onStreamFinished: {
+        root._statusOutput = text
+        root.applyStatus(text)
+      }
+    }
     stderr: StdioCollector { id: statusStderr; waitForEnd: true }
     onExited: function() {
-      root.applyStatus(statusStdout.text || "")
+      if (root._statusOutput === "") root.applyStatus(statusStdout.text || "")
     }
   }
 
