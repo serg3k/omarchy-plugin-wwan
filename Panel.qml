@@ -8,7 +8,7 @@ import "Model.js" as Model
 
 Panel {
   id: root
-  moduleName: "omarchy-plugin-wwan"
+  moduleName: "io.github.serg3k.omarchy-plugin-wwan"
   ipcTarget: "omarchy-plugin-wwan"
   manageIpc: false
 
