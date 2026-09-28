@@ -1,6 +1,6 @@
 # WWAN connection widget
 
-Bar widget for cellular / mobile data on Omarchy 4 (Quattro). It shows signal and operator, and connects or disconnects the NetworkManager gsm profile with one switch.
+Bar widget for cellular / mobile data on Omarchy 4 (Quattro). It shows signal and operator, and provides separate switches for the NetworkManager gsm connection and the WWAN radio.
 
 The widget hides when the machine has no modem. Wi-Fi and Ethernet stay in the stock network widget.
 
@@ -11,7 +11,8 @@ Plugin id: `io.github.serg3k.omarchy-plugin-wwan`. Listed on [Omarchy Plugins](h
 ## Features
 
 - Hides when no modem is present
-- One switch for mobile data: unblock the WWAN radio if needed, enable the modem, bring the gsm profile up
+- Mobile data switch: unblock the WWAN radio if needed, enable the modem, bring the gsm profile up
+- Separate WWAN radio switch to disable mobile radio and automatic reconnection
 - Bar icon tracks the NetworkManager profile, not leftover ModemManager state
 - Panel shows operator, access technology, signal, profile, and a short state line
 - Stays visible when Wi-Fi or Ethernet owns the default route
@@ -75,7 +76,7 @@ That disables the widget and removes the checkout or symlink under `~/.config/om
 - **Click** the bar icon to open the panel.
 - **Switch** turns mobile data on or off. On: unblock the WWAN radio if needed, enable the modem, bring the gsm profile up. Off: take the profile and bearer down; the radio stays on so the next connect is fast.
 - **Right-click** the bar icon toggles the same switch. **Middle-click** refreshes status.
-- There is **one** switch. rfkill, airplane mode, and ThinkPad FN are not a second control. If the radio is blocked, the same switch turns it back on as part of mobile data on.
+- **WWAN radio** uses `nmcli radio wwan on/off`. Turning it off disconnects mobile data and prevents automatic reconnection. This affects all WWAN modems; Wi-Fi and Bluetooth are unchanged. Turning it on allows saved profiles to autoconnect.
 - The bar still shows the modem when Wi-Fi owns the default route.
 
 ### Keyboard
@@ -84,6 +85,7 @@ Inside the panel:
 
 - `t`: toggle mobile data
 - `r`: refresh status
+- `p`: toggle WWAN radio
 - arrows / `j` `k`: move the cursor
 - enter / space: activate
 - `esc`: close

@@ -12,6 +12,8 @@ Item {
   property bool presenceKnown: false
   property bool modemPresent: false
   property bool connected: false
+  property var radioEnabled: null
+  readonly property bool actionRunning: actionProcess.running
   property int _desired: -1
   readonly property bool active: _desired === -1 ? connected : (_desired === 1)
 
@@ -60,6 +62,7 @@ Item {
 
   function resetAbsent() {
     connected = false
+    radioEnabled = null
     _desired = -1
     state = ""
     operatorName = ""
@@ -108,6 +111,7 @@ Item {
       return
     }
     _status = parsed
+    radioEnabled = parsed.radioEnabled
     state = String(parsed.state || "")
     operatorName = String(parsed.operatorName || "")
     accessTech = String(parsed.accessTech || "")
@@ -139,6 +143,14 @@ Item {
     runAction(Model.disconnectCommand(_status), 0)
   }
 
+  function setRadioEnabled(enabled) {
+    runAction(Model.radioCommand(enabled), -1)
+  }
+
+  function toggleRadio() {
+    if (radioEnabled !== null) setRadioEnabled(!radioEnabled)
+  }
+
   function runAction(command, desired) {
     if (!command || actionProcess.running) return
     _desired = desired
@@ -148,7 +160,7 @@ Item {
     actionProcess.running = true
   }
 
-  readonly property string icon: Model.cellularIcon(signal, Model.iconKind(state, blockingUnlock, connected))
+  readonly property string icon: Model.cellularIcon(signal, radioEnabled === false ? "off" : Model.iconKind(state, blockingUnlock, connected))
 
   Timer {
     id: refreshTimer
@@ -188,7 +200,7 @@ Item {
     running: false
     command: [
       "bash", "-c",
-      "printf '%s\\n' '===LIST==='; mmcli -L 2>/dev/null || true; printf '%s\\n' '===NM==='; nmcli -t -f DEVICE,TYPE,STATE,CONNECTION device 2>/dev/null || true"
+      "export LC_ALL=C; printf '%s\\n' '===LIST==='; mmcli -L 2>/dev/null || true; printf '%s\\n' '===NM==='; nmcli -t -f DEVICE,TYPE,STATE,CONNECTION device 2>/dev/null || true"
     ]
     stdout: StdioCollector {
       id: presenceStdout
@@ -210,7 +222,7 @@ Item {
     running: false
     command: [
       "bash", "-c",
-      "printf '%s\\n' '===MODEM==='; mmcli -m any --output-keyvalue 2>/dev/null || true; printf '%s\\n' '===ROUTE==='; ip route get 1.1.1.1 2>/dev/null || true; printf '%s\\n' '===NM==='; nmcli -t -f DEVICE,TYPE,STATE,CONNECTION device 2>/dev/null || true; printf '%s\\n' '===NMCONN==='; nmcli -t -f NAME,TYPE,DEVICE,STATE connection show 2>/dev/null || true"
+      "export LC_ALL=C; printf '%s\\n' '===MODEM==='; mmcli -m any --output-keyvalue 2>/dev/null || true; printf '%s\\n' '===ROUTE==='; ip route get 1.1.1.1 2>/dev/null || true; printf '%s\\n' '===NM==='; nmcli -t -f DEVICE,TYPE,STATE,CONNECTION device 2>/dev/null || true; printf '%s\\n' '===NMCONN==='; nmcli -t -f NAME,TYPE,DEVICE,STATE connection show 2>/dev/null || true; printf '%s\\n' '===WWAN==='; nmcli radio wwan 2>/dev/null || true"
     ]
     stdout: StdioCollector {
       id: statusStdout

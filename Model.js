@@ -256,6 +256,8 @@ function pickGsmDevice(devices) {
 
 function parseStatus(raw) {
   var map = parseKeyValue(section(raw, "MODEM") || raw)
+  var radio = section(raw, "WWAN").trim().toLowerCase()
+  var radioEnabled = radio === "enabled" ? true : radio === "disabled" ? false : null
   var routeDev = parseRouteDev(section(raw, "ROUTE"))
   var connections = gsmConnections(parseNmConnections(section(raw, "NMCONN")))
   var gsmDevice = pickGsmDevice(parseNmDevices(section(raw, "NM")))
@@ -280,6 +282,7 @@ function parseStatus(raw) {
 
   return {
     ok: true,
+    radioEnabled: radioEnabled,
     state: state,
     failedReason: String(map["modem.generic.state-failed-reason"] || ""),
     powerState: String(map["modem.generic.power-state"] || ""),
@@ -329,6 +332,11 @@ function connectCommand(status) {
   return ["bash", "-c", steps.join("; ")]
 }
 
+// NetworkManager owns the radio switch and suppresses autoconnect while off.
+function radioCommand(enabled) {
+  return ["nmcli", "radio", "wwan", enabled ? "on" : "off"]
+}
+
 function disconnectCommand(status) {
   var steps = []
   if (status && status.hasNmProfile && status.profileName) {
@@ -364,6 +372,7 @@ if (typeof module !== "undefined") {
     shellQuote: shellQuote,
     enableRadioCommands: enableRadioCommands,
     connectCommand: connectCommand,
+    radioCommand: radioCommand,
     disconnectCommand: disconnectCommand
   }
 }

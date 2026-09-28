@@ -43,6 +43,7 @@ Panel {
   readonly property string heroMeta: {
     if (wwan.blockingUnlock) return "SIM lock blocks connect"
     if (wwan.state === "failed") return wwan.failedReason !== "" ? wwan.failedReason : "Modem failed"
+    if (wwan.radioEnabled === false) return "Mobile radio off"
     if (wwan.active) return activePhrases[phraseIndex % activePhrases.length]
     if (wwan.state === "connected") return "Disconnected"
     if (wwan.state === "registered" || wwan.state === "enabled" || wwan.state === "searching") return "Registered, disconnected"
@@ -56,7 +57,8 @@ Panel {
   }
 
   function activateCursor() {
-    if (canToggle) wwan.toggleConnection()
+    if (focusSection === "radio") wwan.toggleRadio()
+    else if (canToggle) wwan.toggleConnection()
   }
 
   visible: wwan.presenceKnown && wwan.modemPresent
@@ -95,6 +97,9 @@ Panel {
     function down(): string { wwan.disconnect(); return "ok" }
     function toggleConnection(): string { wwan.toggleConnection(); return "ok" }
     function status(): string { return wwan.state }
+    function radioOn(): string { wwan.setRadioEnabled(true); return "ok" }
+    function radioOff(): string { wwan.setRadioEnabled(false); return "ok" }
+    function radioStatus(): string { return wwan.radioEnabled === null ? "unknown" : wwan.radioEnabled ? "enabled" : "disabled" }
   }
 
   BarIconButton {
@@ -125,7 +130,7 @@ Panel {
       anchors.fill: parent
       onMoveRequested: function() {
         root.cursorActive = true
-        root.focusSection = "header"
+        root.focusSection = root.focusSection === "header" && wwan.radioEnabled !== null ? "radio" : "header"
       }
       onActivateRequested: if (root.cursorActive) root.activateCursor()
       onCloseRequested: root.close()
@@ -133,6 +138,7 @@ Panel {
       onTextKey: function(t) {
         if (t === "t" || t === "T") wwan.toggleConnection()
         else if (t === "r" || t === "R") wwan.refresh()
+        else if (t === "p" || t === "P") wwan.toggleRadio()
       }
 
       Column {
@@ -169,6 +175,7 @@ Panel {
               ToggleSwitch {
                 id: powerSwitch
                 visible: root.canToggle
+                enabled: !wwan.actionRunning
                 checked: wwan.active
                 busy: wwan.busy
                 hasCursor: header.ringVisible
@@ -184,6 +191,50 @@ Panel {
               }
             }
           }
+        }
+
+        Row {
+          width: parent.width
+          spacing: Style.space(8)
+
+          Text {
+            width: parent.width - radioSwitch.width - parent.spacing
+            anchors.verticalCenter: parent.verticalCenter
+            text: "WWAN radio"
+            color: root.foreground
+            font.family: root.fontFamily
+            font.pixelSize: Style.font.bodySmall
+          }
+
+          ToggleSwitch {
+            id: radioSwitch
+            checked: wwan.radioEnabled === true
+            enabled: wwan.radioEnabled !== null && !wwan.actionRunning
+            busy: wwan.actionRunning
+            hasCursor: root.cursorActive && root.focusSection === "radio"
+            foreground: root.foreground
+            onHovered: function(on) {
+              if (on) {
+                root.cursorActive = true
+                root.focusSection = "radio"
+              }
+            }
+            onToggled: wwan.toggleRadio()
+            PanelToolTip {
+              visible: radioSwitch.containsMouse
+              text: wwan.radioEnabled === null ? "Radio status unavailable" : wwan.radioEnabled ? "Turn mobile radio off to save battery" : "Turn mobile radio on"
+              fontFamily: root.fontFamily
+            }
+          }
+        }
+
+        Text {
+          width: parent.width
+          text: "Turning the radio off disables all mobile modems and stops automatic connections. Wi-Fi stays on."
+          color: root.dim
+          font.family: root.fontFamily
+          font.pixelSize: Style.font.caption
+          wrapMode: Text.WordWrap
         }
 
         Text {
@@ -237,7 +288,7 @@ Panel {
         }
 
         Text {
-          visible: wwan.powerState === "low" || wwan.state === "enabling"
+          visible: wwan.radioEnabled !== false && (wwan.powerState === "low" || wwan.state === "enabling")
           width: parent.width
           text: "Stuck in enabling or low power usually means the host still needs an FCC unlock symlink."
           color: root.dim

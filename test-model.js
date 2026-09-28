@@ -189,4 +189,37 @@ assert.strictEqual(Model.cellularIcon(0, "off"), String.fromCodePoint(0xF08FC))
 assert.strictEqual(Model.cellularIcon(38, "disconnected"), String.fromCodePoint(0xF08F8))
 pass("labels and icons")
 
+// Radio policy is independent from both the bearer and modem power state.
+for (const [raw, expected] of [["enabled", true], ["disabled", false], ["", null], ["unavailable", null]]) {
+  const parsed = Model.parseStatus("===MODEM===\nmodem.generic.state : disabled\n===WWAN===\n" + raw + "\n")
+  assert.strictEqual(parsed.radioEnabled, expected)
+}
+assert.strictEqual(Model.parseStatus("===WWAN===\n enabled \n===NM===\n").radioEnabled, true)
+const staleBearer = Model.parseStatus("===MODEM===\nmodem.generic.state : connected\n===WWAN===\ndisabled\n")
+assert.strictEqual(staleBearer.radioEnabled, false)
+pass("radio enabled, disabled, unavailable and transitional modem states")
+
+// Execute the generated argv against a stub: only the WWAN radio may change,
+// and command failures must reach the service's existing error handler.
+const fs = require("fs")
+const os = require("os")
+const path = require("path")
+const cp = require("child_process")
+const stubDir = fs.mkdtempSync(path.join(os.tmpdir(), "wwan-radio-test-"))
+try {
+  fs.writeFileSync(path.join(stubDir, "nmcli"), '#!/bin/sh\nprintf "%s\\n" "$@"\nexit "${WWAN_TEST_EXIT:-0}"\n', {mode: 0o700})
+  for (const enabled of [true, false]) {
+    const argv = Model.radioCommand(enabled)
+    const result = cp.spawnSync(argv[0], argv.slice(1), {encoding: "utf8", env: {...process.env, PATH: stubDir}})
+    assert.strictEqual(result.status, 0)
+    assert.deepStrictEqual(result.stdout.trim().split("\n"), ["radio", "wwan", enabled ? "on" : "off"])
+  }
+  const argv = Model.radioCommand(false)
+  const failure = cp.spawnSync(argv[0], argv.slice(1), {env: {...process.env, PATH: stubDir, WWAN_TEST_EXIT: "10"}})
+  assert.strictEqual(failure.status, 10)
+} finally {
+  fs.rmSync(stubDir, {recursive: true})
+}
+pass("radio actions target WWAN only and preserve failure exit codes")
+
 console.log("all tests passed")
