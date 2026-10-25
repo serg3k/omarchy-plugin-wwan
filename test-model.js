@@ -147,7 +147,7 @@ assert.strictEqual(profileDown.hasNmProfile, true)
 assert.strictEqual(profileDown.profileName, "v6-telekom")
 assert.strictEqual(profileDown.connected, false)
 assert.strictEqual(Model.iconKind(profileDown.state, false, profileDown.connected), "disconnected")
-assert.strictEqual(Model.cellularIcon(38, "disconnected"), String.fromCodePoint(0xF08F8))
+assert.strictEqual(Model.cellularIcon(38, "disconnected"), String.fromCodePoint(0xF08FE))
 assertConnectScript(profileDown, ["nmcli connection up id 'v6-telekom'"])
 assertDisconnectScript(profileDown, [
   "nmcli connection down id 'v6-telekom'",
@@ -184,9 +184,70 @@ assert.strictEqual(Model.iconKind("connected", true), "locked")
 assert.strictEqual(Model.iconKind("connected", false, false), "disconnected")
 assert.strictEqual(Model.iconKind("disabled", false, false), "off")
 assert.strictEqual(Model.cellularIcon(38, "ok"), String.fromCodePoint(0xF08F4))
-assert.strictEqual(Model.cellularIcon(80, "ok"), String.fromCodePoint(0xF08F7))
+assert.strictEqual(Model.cellularIcon(80, "ok"), String.fromCodePoint(0xF08FA))
 assert.strictEqual(Model.cellularIcon(0, "off"), String.fromCodePoint(0xF08FC))
-assert.strictEqual(Model.cellularIcon(38, "disconnected"), String.fromCodePoint(0xF08F8))
+assert.strictEqual(Model.cellularIcon(38, "disconnected"), String.fromCodePoint(0xF08FE))
 pass("labels and icons")
 
+// Radio policy is independent from both the bearer and modem power state.
+for (const [raw, expected] of [["enabled", true], ["disabled", false], ["", null], ["unavailable", null]]) {
+  const parsed = Model.parseStatus("===MODEM===\nmodem.generic.state : disabled\n===WWAN===\n" + raw + "\n")
+  assert.strictEqual(parsed.radioEnabled, expected)
+}
+assert.strictEqual(Model.parseStatus("===WWAN===\n enabled \n===NM===\n").radioEnabled, true)
+const staleBearer = Model.parseStatus("===MODEM===\nmodem.generic.state : connected\n===WWAN===\ndisabled\n")
+assert.strictEqual(staleBearer.radioEnabled, false)
+pass("radio enabled, disabled, unavailable and transitional modem states")
+
+// Execute the generated argv against a stub: only the WWAN radio may change,
+// and command failures must reach the service's existing error handler.
+const fs = require("fs")
+const os = require("os")
+const path = require("path")
+const cp = require("child_process")
+const stubDir = fs.mkdtempSync(path.join(os.tmpdir(), "wwan-radio-test-"))
+try {
+  fs.writeFileSync(path.join(stubDir, "nmcli"), '#!/bin/sh\nprintf "%s\\n" "$@"\nexit "${WWAN_TEST_EXIT:-0}"\n', {mode: 0o700})
+  for (const enabled of [true, false]) {
+    const argv = Model.radioCommand(enabled)
+    const result = cp.spawnSync(argv[0], argv.slice(1), {encoding: "utf8", env: {...process.env, PATH: stubDir}})
+    assert.strictEqual(result.status, 0)
+    assert.deepStrictEqual(result.stdout.trim().split("\n"), ["radio", "wwan", enabled ? "on" : "off"])
+  }
+  const argv = Model.radioCommand(false)
+  const failure = cp.spawnSync(argv[0], argv.slice(1), {env: {...process.env, PATH: stubDir, WWAN_TEST_EXIT: "10"}})
+  assert.strictEqual(failure.status, 10)
+} finally {
+  fs.rmSync(stubDir, {recursive: true})
+}
+pass("radio actions target WWAN only and preserve failure exit codes")
+
 console.log("all tests passed")
+
+for (const [signal, code] of [[0,0xF08FE],[19,0xF08FE],[20,0xF08F4],[39,0xF08F4],[40,0xF08F6],[46,0xF08F6],[59,0xF08F6],[60,0xF08F8],[79,0xF08F8],[80,0xF08FA],[100,0xF08FA]]) {
+  assert.strictEqual(Model.cellularIcon(signal,"ok"),String.fromCodePoint(code));
+}
+pass("signal levels never use alert glyphs");
+
+// Counters must follow the cellular IP interface, including MBIM child devices.
+assert.strictEqual(Model.ipInterface('GENERAL.DEVICE:wlan0\nGENERAL.IP-IFACE:wlan0\nGENERAL.DEVICE:cdc-wdm0\nGENERAL.IP-IFACE:wwan0mbim0', 'cdc-wdm0'), 'wwan0mbim0')
+assert.strictEqual(Model.ipInterface('GENERAL.DEVICE:cdc-wdm0\nGENERAL.IP-IFACE:../../bad', 'cdc-wdm0'), '')
+function counters(rx, tx) { return ' wwan0mbim0: ' + rx + ' 0 0 0 0 0 0 0 ' + tx + ' 0 0 0 0 0 0 0' }
+var first = Model.transferSample(counters(1000, 500), 'wwan0mbim0', 1000, null)
+assert.strictEqual(first.rxRate, -1)
+var second = Model.transferSample(counters(4000, 1500), 'wwan0mbim0', 3000, first)
+assert.strictEqual(second.rxRate, 1500)
+assert.strictEqual(second.txRate, 500)
+assert.strictEqual(Model.transferSample(counters(1, 1), 'wwan0mbim0', 4000, second).rxRate, -1)
+assert.strictEqual(Model.transferSample(counters(5000, 2000), 'wwan0mbim0', 30000, second).rxRate, -1)
+assert.strictEqual(Model.transferSample(counters(5000, 2000), 'wlan0', 4000, second), null)
+assert.strictEqual(Model.transferSample('wwan0mbim0: broken', 'wwan0mbim0', 4000, second), null)
+console.log('ok - cellular interface resolution, rates, resets, missing counters and stale samples')
+var smooth = Model.transferSample(counters(4000, 1500), 'wwan0mbim0', 4000, second)
+assert.strictEqual(smooth.rxRate, 1000) // 3000 bytes / 3 seconds, including idle interval
+assert.strictEqual(smooth.txRate, 1000 / 3)
+for (var tick = 5; tick <= 10; tick++) smooth = Model.transferSample(counters(4000, 1500), 'wwan0mbim0', tick * 1000, smooth)
+assert.strictEqual(smooth.rxRate, 0) // old burst leaves rolling window
+assert.strictEqual(smooth.intervals.length, 5)
+assert.strictEqual(Model.transferSample(counters(0, 0), 'wwan0mbim0', 11000, smooth).intervals.length, 0)
+console.log('ok - time-weighted rolling rates, bounded window and history reset')

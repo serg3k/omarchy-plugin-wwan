@@ -7,4 +7,5 @@ AGENTS.md
 IDEA.md
 ARCHITECTURE.md
 PRIOR-ART.md
-
+__pycache__/
+*.py[cod]
