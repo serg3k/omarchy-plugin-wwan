@@ -188,7 +188,7 @@ Item {
     running: false
     command: [
       "bash", "-c",
-      "printf '%s\\n' '===LIST==='; mmcli -L 2>/dev/null || true; printf '%s\\n' '===NM==='; nmcli -t -f DEVICE,TYPE,STATE,CONNECTION device 2>/dev/null || true"
+      "export LC_ALL=C; printf '%s\\n' '===LIST==='; mmcli -L 2>/dev/null || true; printf '%s\\n' '===NM==='; nmcli -t -f DEVICE,TYPE,STATE,CONNECTION device 2>/dev/null || true"
     ]
     stdout: StdioCollector {
       id: presenceStdout
@@ -210,7 +210,7 @@ Item {
     running: false
     command: [
       "bash", "-c",
-      "printf '%s\\n' '===MODEM==='; mmcli -m any --output-keyvalue 2>/dev/null || true; printf '%s\\n' '===ROUTE==='; ip route get 1.1.1.1 2>/dev/null || true; printf '%s\\n' '===NM==='; nmcli -t -f DEVICE,TYPE,STATE,CONNECTION device 2>/dev/null || true; printf '%s\\n' '===NMCONN==='; nmcli -t -f NAME,TYPE,DEVICE,STATE connection show 2>/dev/null || true"
+      "export LC_ALL=C; printf '%s\\n' '===MODEM==='; mmcli -m any --output-keyvalue 2>/dev/null || true; printf '%s\\n' '===ROUTE==='; ip route get 1.1.1.1 2>/dev/null || true; printf '%s\\n' '===NM==='; nmcli -t -f DEVICE,TYPE,STATE,CONNECTION device 2>/dev/null || true; printf '%s\\n' '===NMCONN==='; nmcli -t -f NAME,TYPE,DEVICE,STATE connection show 2>/dev/null || true"
     ]
     stdout: StdioCollector {
       id: statusStdout

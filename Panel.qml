@@ -1,13 +1,14 @@
+pragma ComponentBehavior: Bound
 import QtQuick
-import QtQuick.Controls
-import Quickshell
 import Quickshell.Io
 import qs.Commons
+import qs.Commons as Commons
 import qs.Ui
 import "Model.js" as Model
 
 Panel {
   id: root
+  PluginTranslations { id: strings }
   moduleName: "io.github.serg3k.omarchy-plugin-wwan"
   ipcTarget: "omarchy-plugin-wwan"
   manageIpc: false
@@ -16,13 +17,13 @@ Panel {
   property bool cursorActive: false
   property int phraseIndex: 0
 
-  readonly property color foreground: bar ? bar.foreground : Color.foreground
-  readonly property color urgent: bar ? bar.urgent : Color.urgent
+  readonly property color foreground: bar ? bar.foreground : Commons.Color.foreground
+  readonly property color urgent: bar ? bar.urgent : Commons.Color.urgent
   readonly property color dim: Qt.darker(foreground, 1.55)
   readonly property string fontFamily: bar ? bar.fontFamily : Style.font.family
   readonly property bool headerHasCursor: cursorActive && focusSection === "header" && wwan.modemPresent
   readonly property bool canToggle: wwan.modemPresent && !wwan.blockingUnlock
-  readonly property string toggleHint: wwan.active ? "Disconnect mobile data" : "Connect mobile data"
+  readonly property string toggleHint: wwan.active ? strings.t("Disconnect mobile data") : strings.t("Connect mobile data")
   readonly property color iconColor: {
     if (wwan.blockingUnlock || wwan.state === "failed") return urgent
     if (wwan.active) return foreground
@@ -34,20 +35,20 @@ Panel {
     return Qt.darker(barForeground, 1.55)
   }
   readonly property var activePhrases: [
-    "Holding the bearer",
-    "Riding the tower",
-    "Borrowing bars",
-    "Keeping the session"
+    strings.t("Holding the bearer"),
+    strings.t("Riding the tower"),
+    strings.t("Borrowing bars"),
+    strings.t("Keeping the session")
   ]
-  readonly property string heroTitle: wwan.operatorName !== "" ? wwan.operatorName : "Mobile data"
+  readonly property string heroTitle: wwan.operatorName !== "" ? wwan.operatorName : strings.t("Mobile data")
   readonly property string heroMeta: {
-    if (wwan.blockingUnlock) return "SIM lock blocks connect"
-    if (wwan.state === "failed") return wwan.failedReason !== "" ? wwan.failedReason : "Modem failed"
+    if (wwan.blockingUnlock) return strings.t("SIM lock blocks connect")
+    if (wwan.state === "failed") return wwan.failedReason !== "" ? strings.t(wwan.failedReason, wwan.failedReason) : strings.t("Modem failed")
     if (wwan.active) return activePhrases[phraseIndex % activePhrases.length]
-    if (wwan.state === "connected") return "Disconnected"
-    if (wwan.state === "registered" || wwan.state === "enabled" || wwan.state === "searching") return "Registered, disconnected"
-    if (wwan.state !== "") return wwan.state
-    return "Checking…"
+    if (wwan.state === "connected") return strings.t("Disconnected")
+    if (wwan.state === "registered" || wwan.state === "enabled" || wwan.state === "searching") return strings.t("Registered, disconnected")
+    if (wwan.state !== "") return strings.t("state." + wwan.state, wwan.state)
+    return strings.t("Checking…")
   }
 
   function setHeaderCursor() {
@@ -122,6 +123,9 @@ Panel {
 
     PanelKeyCatcher {
       id: keyCatcher
+      objectName: "wwanContent"
+      LayoutMirroring.enabled: strings.rightToLeft
+      LayoutMirroring.childrenInherit: true
       anchors.fill: parent
       onMoveRequested: function() {
         root.cursorActive = true
@@ -147,8 +151,9 @@ Panel {
           readonly property bool ringVisible: root.headerHasCursor
           function focusHero() { root.setHeaderCursor() }
 
-          PanelHero {
+          WwanHero {
             id: hero
+            objectName: "wwanHero"
             width: parent.width
             title: root.heroTitle
             meta: root.heroMeta
@@ -157,6 +162,7 @@ Panel {
             iconOpacity: wwan.active ? 1.0 : 0.5
             iconComponent: Component {
               Text {
+                textFormat: Text.PlainText
                 text: wwan.icon
                 color: root.iconColor
                 font.family: root.fontFamily
@@ -168,6 +174,7 @@ Panel {
             trailingControl: Component {
               ToggleSwitch {
                 id: powerSwitch
+                Accessible.name: root.toggleHint
                 visible: root.canToggle
                 checked: wwan.active
                 busy: wwan.busy
@@ -187,9 +194,11 @@ Panel {
         }
 
         Text {
+          textFormat: Text.PlainText
           visible: wwan.actionStatus !== "" || wwan.lastError !== ""
           width: parent.width
-          text: wwan.actionStatus !== "" ? wwan.actionStatus : wwan.lastError
+          objectName: "wwanActionStatus"
+          text: strings.t(wwan.actionStatus || wwan.lastError, wwan.actionStatus || wwan.lastError)
           color: wwan.lastError !== "" && wwan.actionStatus === "" ? root.urgent : root.dim
           font.family: root.fontFamily
           font.pixelSize: Style.font.bodySmall
@@ -200,18 +209,18 @@ Panel {
           width: parent.width
           spacing: Style.spacing.labelGap
 
-          InfoPair { label: "State"; value: wwan.state !== "" ? wwan.state : "—" }
+          InfoPair { label: strings.t("State"); value: wwan.state !== "" ? strings.t("state." + wwan.state, wwan.state) : "—" }
           InfoPair {
-            label: "Radio"
+            label: strings.t("Radio")
             value: {
               var tech = Model.accessTechLabel(wwan.accessTech)
-              var signal = wwan.signal >= 0 ? wwan.signal + "%" : "—"
+              var signal = wwan.signal >= 0 ? strings.formatNumber(wwan.signal) + "%" : "—"
               return tech !== "" ? tech + " · " + signal : signal
             }
           }
           InfoPair {
             visible: wwan.profileName !== ""
-            label: "Profile"
+            label: strings.t("Profile")
             value: wwan.profileName
           }
           InfoPair {
@@ -221,15 +230,16 @@ Panel {
           }
           InfoPair {
             visible: wwan.connected && !wwan.defaultRoute
-            label: "Route"
-            value: "not default"
+            label: strings.t("Route")
+            value: strings.t("not default")
           }
         }
 
         Text {
+          textFormat: Text.PlainText
           visible: wwan.pin2Footnote
           width: parent.width
-          text: "sim-pin2 is FDN on this SIM, not a connect lock."
+          text: strings.t("sim-pin2 is FDN on this SIM, not a connect lock.")
           color: root.dim
           font.family: root.fontFamily
           font.pixelSize: Style.font.caption
@@ -237,9 +247,10 @@ Panel {
         }
 
         Text {
+          textFormat: Text.PlainText
           visible: wwan.powerState === "low" || wwan.state === "enabling"
           width: parent.width
-          text: "Stuck in enabling or low power usually means the host still needs an FCC unlock symlink."
+          text: strings.t("Stuck in enabling or low power usually means the host still needs an FCC unlock symlink.")
           color: root.dim
           font.family: root.fontFamily
           font.pixelSize: Style.font.caption
@@ -257,6 +268,7 @@ Panel {
   }
 
   component InfoPair: Row {
+    id: infoPair
     property string label: ""
     property string value: ""
 
@@ -264,12 +276,13 @@ Panel {
     spacing: Style.space(8)
     visible: value !== ""
 
-    InfoLabel { text: label }
+    InfoLabel { text: infoPair.label }
     Item { width: Math.max(0, parent.width - parent.children[0].implicitWidth - parent.children[2].implicitWidth - parent.spacing * 2); height: 1 }
-    InfoValue { text: value }
+    InfoValue { text: infoPair.value }
   }
 
   component InfoLabel: Text {
+    textFormat: Text.PlainText
     color: root.foreground
     opacity: 0.6
     font.family: root.fontFamily
@@ -277,6 +290,7 @@ Panel {
   }
 
   component InfoValue: Text {
+    textFormat: Text.PlainText
     color: root.foreground
     font.family: root.fontFamily
     font.pixelSize: Style.font.bodySmall

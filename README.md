@@ -109,3 +109,25 @@ Other laptops with a ModemManager gsm device should work the same. They are not 
 ## License
 
 MIT. See [LICENSE](LICENSE).
+
+## Languages
+
+The interface includes English, German, Spanish, French, Portuguese, Italian, Polish, Russian, Arabic, Hindi, Japanese, Korean, and Simplified Chinese. On Omarchy 4.5+, it follows Setup → Language and updates live. Earlier Omarchy 4.x uses the process message locale (`LC_ALL`, then `LC_MESSAGES`, then `LANG`, with Qt locale as a final fallback); restart the shell after changing that locale. Regional codes fall back to their base language and then English. Spanish (Mexico) and Portuguese (Brazil) use their base catalogs. C/POSIX locales use English. Arabic mirrors the panel.
+
+ModemManager/NetworkManager commands keep `LC_ALL=C` so parsing and machine identifiers remain stable. Provider and profile names are displayed as supplied. Unknown diagnostics remain in their original language. WWAN's local header and value labels render these strings as plain text on both old and new shells.
+
+To contribute a translation, copy `i18n/en.json` to `i18n/<language-code>.json` and translate the values without changing keys or placeholders. Native-speaker review is welcome.
+
+## Development checks
+
+```bash
+node test-model.js
+node tests/test-locale.js
+python3 -m unittest discover -s tests -v
+omarchy plugin validate .
+bash tests/run-qml.sh
+```
+
+The QML flow replaces `mmcli`, `nmcli`, and `ip` with fixtures; it does not inspect or change a real modem or connection. It checks live language switching, legacy locale fallback, modem-state labels, number formatting, and markup-shaped provider/error text. Set `PLUGIN_TEST_SHELL=/path/to/older/shell` to exercise older component APIs. When testing old source with current Qt, `python3 tests/prepare-legacy-fixture.py /path/to/older/shell /tmp/wwan-legacy-shell` makes a disposable copy with namespace-only Color qualifications. No installed Omarchy files are changed.
+
+Validated against the installed 4.5 shell and official 4.0.0/4.0.4 component fixtures. German and Arabic previews were inspected with a simulated modem. These are component compatibility checks, not full older OS/Qt installations or new physical modem tests.
